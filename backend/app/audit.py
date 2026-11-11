@@ -7,11 +7,14 @@ event. Editing or deleting any row breaks the chain from that point on, and
 
 import hashlib
 import json
+import socket
+import sys
 from datetime import datetime, timezone
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
+from .config import settings
 from .models import AuditEvent
 
 GENESIS = "0" * 64
@@ -47,7 +50,28 @@ def record(db: Session, actor: str, action: str, request_id: str | None = None, 
     )
     db.add(event)
     db.flush()
+    emit_hec(hec_event(event))
     return event
+
+
+def hec_event(event, sourcetype: str = "orbitdesk:audit") -> dict:
+    """One audit event in Splunk HTTP Event Collector format (time in epoch seconds)."""
+    ts = datetime.fromisoformat(event.ts)
+    return {
+        "time": round(ts.timestamp(), 3),
+        "host": socket.gethostname(),
+        "source": settings.hec_source,
+        "sourcetype": sourcetype,
+        "event": {"id": event.id, "actor": event.actor, "action": event.action, "request_id": event.request_id,
+                  "payload": event.payload, "prev_hash": event.prev_hash, "hash": event.hash},
+    }
+
+
+def emit_hec(record: dict) -> None:
+    """Write one HEC JSON line to stdout. On ECS, stdout goes to CloudWatch Logs."""
+    if settings.audit_hec_stdout:
+        sys.stdout.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+        sys.stdout.flush()
 
 
 def verify_events(events: list) -> dict:

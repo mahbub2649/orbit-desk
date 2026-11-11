@@ -5,3 +5,12 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+terraform.tfvars
+backend.hcl

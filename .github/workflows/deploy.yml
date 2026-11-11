@@ -1,0 +1,77 @@
+name: Deploy
+
+# Started by hand (Actions tab, or: gh workflow run deploy.yml). Not on every push, so a
+# destroyed demo stack does not come back by itself.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # GitHub OIDC token -> short-lived AWS credentials; no stored keys
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # With a public repository, add "environment: production" here, give that environment
+    # required reviewers, and change the deploy role's trust to "environment:production".
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.2"
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: infra/app
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=orbit-desk/app.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="use_lockfile=true" -backend-config="encrypt=true"
+
+      # The image repository must exist before the first push.
+      - name: Ensure the ECR repository
+        working-directory: infra/app
+        run: |
+          terraform apply -input=false -auto-approve \
+            -target=module.service.aws_ecr_repository.app \
+            -var "image_tag=${{ github.sha }}" -var "protect_data=${{ vars.PROTECT_DATA || 'true' }}"
+          echo "REPO=$(terraform output -raw ecr_repository_url)" >> "$GITHUB_ENV"
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push the image (tagged with the commit SHA)
+        run: |
+          docker build --platform linux/amd64 -t "$REPO:${{ github.sha }}" .
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.1 image \
+            --quiet --exit-code 1 --severity CRITICAL --ignore-unfixed "$REPO:${{ github.sha }}"
+          docker push "$REPO:${{ github.sha }}"
+
+      - name: Terraform apply
+        working-directory: infra/app
+        run: |
+          terraform apply -input=false -auto-approve \
+            -var "image_tag=${{ github.sha }}" -var "protect_data=${{ vars.PROTECT_DATA || 'true' }}"
+          URL=$(terraform output -raw url)
+          echo "### Deployed ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "$URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Wait for the service to settle
+        run: |
+          aws ecs wait services-stable --cluster orbit-desk --services orbit-desk
+          aws ecs describe-services --cluster orbit-desk --services orbit-desk \
+            --query 'services[0].deployments[0].{status:status,rollout:rolloutState,running:runningCount}'

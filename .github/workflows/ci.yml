@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit -p .
+      - run: npm run build
+
+  terraform:
+    name: Terraform fmt and validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.2"
+      - run: terraform fmt -check -recursive infra
+      - name: Validate
+        run: |
+          for dir in infra/bootstrap infra/app; do
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
+
+  security:
+    name: Security scans
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans the full history
+      - name: gitleaks (secrets in git history)
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.0 git /repo --no-banner --redact
+      - name: Trivy (dependency vulnerabilities and IaC misconfigurations)
+        run: |
+          docker run --rm -v "$PWD:/src" aquasec/trivy:0.69.1 fs --quiet --exit-code 1 \
+            --scanners vuln,misconfig --severity HIGH,CRITICAL --ignore-unfixed /src
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Checkov (Terraform policy checks)
+        run: |
+          pip install --quiet checkov
+          checkov -d infra --framework terraform --quiet --compact
+
+  plan:
+    name: Terraform plan
+    if: github.event_name == 'pull_request' && vars.AWS_PLAN_ROLE_ARN != ''
+    needs: [terraform]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # lets the job request a GitHub OIDC token for AWS
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.2"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Init
+        working-directory: infra/app
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=orbit-desk/app.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="use_lockfile=true" -backend-config="encrypt=true"
+      - name: Plan (read-only, no lock)
+        working-directory: infra/app
+        run: |
+          terraform plan -input=false -lock=false -no-color \
+            -var "image_tag=${{ vars.DEPLOYED_IMAGE_TAG || 'unchanged' }}" \
+            -var "protect_data=${{ vars.PROTECT_DATA || 'true' }}" > plan.txt || (cat plan.txt; exit 1)
+          { echo '### Terraform plan'; echo '```'; tail -n 60 plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

@@ -331,3 +331,22 @@ def test_latency_summary_is_area_weighted_and_consistent():
     polar = coverage.summarize(fake, 12)["never_share"]
     fake["hours"][0, 0], fake["hours"][3, 0] = 1.0, float("inf")
     assert coverage.summarize(fake, 12)["never_share"] > polar > 0
+
+
+def test_database_url_escapes_generated_passwords(monkeypatch):
+    from app.config import Settings
+    s = Settings(db_host="db.example", db_username="orbitdesk", db_password="p@ss:w/rd#1", db_name="orbitdesk")
+    url = s.sqlalchemy_url
+    assert url.password == "p@ss:w/rd#1" and url.host == "db.example" and url.query["sslmode"] == "require"
+    assert "p@ss:w/rd#1" not in url.render_as_string(hide_password=False).split("@db.example")[0].split("orbitdesk:", 1)[1]
+    assert Settings(db_host="").sqlalchemy_url.startswith("postgresql+psycopg://")
+
+
+def test_audit_events_are_written_as_splunk_hec_json(capsys):
+    import json
+    ev = SimpleNamespace(id=7, ts="2026-11-12T08:00:00.000+00:00", actor="sara", action="approved",
+                         request_id="r1", payload={"role": "compliance"}, prev_hash="0" * 64, hash="ab" * 32)
+    audit.emit_hec(audit.hec_event(ev))
+    line = json.loads(capsys.readouterr().out.strip())
+    assert line["time"] == 1794470400.0 and line["sourcetype"] == "orbitdesk:audit"
+    assert line["event"]["action"] == "approved" and line["event"]["hash"] == "ab" * 32

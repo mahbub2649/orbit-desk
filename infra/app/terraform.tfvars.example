@@ -1,0 +1,5 @@
+image_tag    = "set-by-ci"
+alarm_email  = ""
+protect_data = true
+# public_url = "https://dxxxxxxxxxxxx.cloudfront.net"
+# extra_environment = { JIRA_BASE_URL = "https://your-site.atlassian.net", JIRA_EMAIL = "you@example.com", JIRA_PROJECT_KEY = "XEYE" }

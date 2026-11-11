@@ -1,0 +1,41 @@
+name: Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "destroy orbit-desk" to delete the whole app stack
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    if: inputs.confirm == 'destroy orbit-desk'
+    runs-on: ubuntu-latest
+    # With a public repository, add "environment: production" here, give that environment
+    # required reviewers, and change the deploy role's trust to "environment:production".
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.2"
+      - name: Terraform destroy
+        working-directory: infra/app
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=orbit-desk/app.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="use_lockfile=true" -backend-config="encrypt=true"
+          terraform destroy -input=false -auto-approve -var "image_tag=destroy" -var "protect_data=false"
