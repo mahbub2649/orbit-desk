@@ -55,74 +55,64 @@ hash-chained audit log.
 
 ## Features
 
+**Watch board.** Earthquakes (USGS), disaster alerts and floods (GDACS), and storms
+and wildfires (NASA EONET) are fetched every 10 minutes and merged, so an event
+reported by two feeds appears once. Every event gets these numbers:
+
+| Number | How it is computed |
+|---|---|
+| Time to first radar look | SGP4 propagation of 53 public orbits (CelesTrak) |
+| Looks in 24 h and 72 h | The same propagation, shared by all events |
+| Optical-blind share | Hours of night or at least 70% cloud (NOAA GFS forecast) |
+| People nearby | Population of cities within 100 km (bundled GeoNames list) |
+| Priority | Severity × radar advantage × freshness × people nearby, each term shown with its source |
+
 <table>
 <tr>
 <td width="50%" valign="top">
 
-**Watch board**
-
-Earthquakes (USGS), disaster alerts and floods (GDACS), and storms and wildfires
-(NASA EONET), fetched every 10 minutes and merged so an event reported by two
-feeds appears once. Each event gets:
-
-| Number | How |
-|---|---|
-| Time to first radar look | SGP4 over 53 orbits (CelesTrak) |
-| Looks in 24 h / 72 h | Same propagation, shared by all events |
-| Optical-blind share | Hours of night or ≥70% cloud (NOAA GFS) |
-| People nearby | Cities within 100 km (GeoNames) |
-| Priority | `100 × severity × radar advantage × freshness × people`, every term shown with its source |
-
-**Event dossier**
-
-A live countdown to the first look, one time axis showing night, cloud and every
-radar pass, and the full priority calculation.
-
-**Latency map**
-
-The whole globe coloured by the wait for the first radar look over the next 24
-hours, rebuilt every 10 minutes (about 10 s of NumPy). Quick places stay clear;
-gaps between orbits show as orange bands; places with no look are hatched. Hover
-any point for its wait and number of looks. Area-weighted figures: typical wait,
-the wait 9 in 10 places beat, share reachable within 1 and 3 hours.
+**Event dossier**<br>A live countdown to the first look, one time axis showing night, cloud and every radar pass, and the full priority calculation.
 
 </td>
 <td width="50%" valign="top">
 
-**Tasking orders**
+**Latency map**<br>The whole globe coloured by the wait for a first radar look over 24 hours. Gaps between orbits show as orange bands; hover any point for its wait and looks.
 
-Created from an event or from a plain-language request. Each order gets a 7-day
-feasibility verdict, a collection plan that avoids satellites already booked by
-other open orders, a Markdown brief, and a revisit comparison against two other
-radar constellations (Capella, Umbra; same model, public orbits).
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-**Approvals and audit**
+**Tasking orders**<br>From an event or a plain-language request: 7-day feasibility, a collection plan that skips booked satellites, a brief, and a Capella/Umbra revisit comparison.
 
-Every order needs a sales manager. An area in a restricted country also needs a
-compliance officer. Nobody approves their own request. Every step is written to a
-hash-chained log, and `GET /api/audit/verify` reports the first entry that was
-edited or deleted.
+</td>
+<td width="50%" valign="top">
 
-**Integrations**
+**Approvals and audit**<br>A sales manager signs every order; restricted countries also need compliance. Nobody approves their own request, and every step goes to a hash-chained log.
 
-On final approval: a Jira ticket (real when `JIRA_*` is set) and a simulated
-Salesforce deal. Writes are idempotent; a failed write leaves the order approved,
-logs the error and offers a retry. Slack messages for new orders, decisions and
-high-priority events when `SLACK_WEBHOOK_URL` is set.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-**Analyst (Ask tab)**
+**Integrations**<br>On approval: a Jira ticket (real when configured) and a simulated Salesforce deal. Writes are idempotent; a failed one is logged and can be retried. Slack alerts.
 
-Claude answers questions such as "which floods can we image before 06:00 UTC?" by
-calling seven read-only tools over the console's own data. Every lookup is shown
-and logged. The dossier can also draft outreach for an insurer, agency, NGO or
-port operator from that event's computed facts; nothing is sent.
+</td>
+<td width="50%" valign="top">
 
-**Globe**
+**Analyst**<br>Claude answers questions like "which floods can we image before 06:00 UTC?" with seven read-only tools, and drafts outreach from an event's facts. Nothing is sent.
 
-Drawn from scratch with three.js: Natural Earth outlines painted to a texture,
-dotted land, a day/night line, satellites on their real orbits, pulsing event
-markers, ground tracks of upcoming passes, and live links to any satellite that
-could image the selected target at this moment.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+**Globe**<br>Drawn from scratch with three.js: painted borders, dotted land, a day/night line, satellites on real orbits, ground tracks, and live links to satellites in view.
+
+</td>
+<td width="50%" valign="top">
+
+**Private by design**<br>No target location leaves the app: cloud data is downloaded as whole-world files, and cities and borders are bundled. Everything runs offline with one setting.
 
 </td>
 </tr>
