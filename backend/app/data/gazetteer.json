@@ -1,0 +1,254 @@
+{
+ "port of rotterdam": {
+  "lat": 51.95,
+  "lon": 4.14
+ },
+ "rotterdam": {
+  "lat": 51.92,
+  "lon": 4.48
+ },
+ "helsinki": {
+  "lat": 60.17,
+  "lon": 24.94
+ },
+ "espoo": {
+  "lat": 60.21,
+  "lon": 24.66
+ },
+ "turku": {
+  "lat": 60.45,
+  "lon": 22.27
+ },
+ "port of singapore": {
+  "lat": 1.264,
+  "lon": 103.84
+ },
+ "singapore": {
+  "lat": 1.29,
+  "lon": 103.85
+ },
+ "suez canal": {
+  "lat": 30.58,
+  "lon": 32.27
+ },
+ "port said": {
+  "lat": 31.26,
+  "lon": 32.3
+ },
+ "panama canal": {
+  "lat": 9.08,
+  "lon": -79.68
+ },
+ "strait of hormuz": {
+  "lat": 26.57,
+  "lon": 56.25
+ },
+ "port of hamburg": {
+  "lat": 53.54,
+  "lon": 9.97
+ },
+ "hamburg": {
+  "lat": 53.55,
+  "lon": 9.99
+ },
+ "port of los angeles": {
+  "lat": 33.74,
+  "lon": -118.26
+ },
+ "los angeles": {
+  "lat": 34.05,
+  "lon": -118.24
+ },
+ "port of shanghai": {
+  "lat": 30.63,
+  "lon": 122.06
+ },
+ "shanghai": {
+  "lat": 31.23,
+  "lon": 121.47
+ },
+ "sevastopol": {
+  "lat": 44.62,
+  "lon": 33.53
+ },
+ "pyongyang": {
+  "lat": 39.03,
+  "lon": 125.75
+ },
+ "tokyo": {
+  "lat": 35.68,
+  "lon": 139.76
+ },
+ "reykjavik": {
+  "lat": 64.15,
+  "lon": -21.94
+ },
+ "svalbard": {
+  "lat": 78.22,
+  "lon": 15.65
+ },
+ "longyearbyen": {
+  "lat": 78.22,
+  "lon": 15.65
+ },
+ "manaus": {
+  "lat": -3.12,
+  "lon": -60.02
+ },
+ "new orleans": {
+  "lat": 29.95,
+  "lon": -90.07
+ },
+ "jakarta": {
+  "lat": -6.21,
+  "lon": 106.85
+ },
+ "dhaka": {
+  "lat": 23.81,
+  "lon": 90.41
+ },
+ "venice": {
+  "lat": 45.44,
+  "lon": 12.33
+ },
+ "gulf of finland": {
+  "lat": 59.9,
+  "lon": 26.0
+ },
+ "port of antwerp": {
+  "lat": 51.28,
+  "lon": 4.34
+ },
+ "antwerp": {
+  "lat": 51.22,
+  "lon": 4.4
+ },
+ "odesa": {
+  "lat": 46.48,
+  "lon": 30.73
+ },
+ "odessa": {
+  "lat": 46.48,
+  "lon": 30.73
+ },
+ "kaliningrad": {
+  "lat": 54.71,
+  "lon": 20.51
+ },
+ "murmansk": {
+  "lat": 68.97,
+  "lon": 33.08
+ },
+ "taipei": {
+  "lat": 25.03,
+  "lon": 121.57
+ },
+ "kaohsiung": {
+  "lat": 22.61,
+  "lon": 120.29
+ },
+ "bab el-mandeb": {
+  "lat": 12.58,
+  "lon": 43.33
+ },
+ "gibraltar": {
+  "lat": 36.14,
+  "lon": -5.35
+ },
+ "bosphorus": {
+  "lat": 41.12,
+  "lon": 29.07
+ },
+ "valencia": {
+  "lat": 39.47,
+  "lon": -0.38
+ },
+ "houston": {
+  "lat": 29.73,
+  "lon": -95.27
+ },
+ "miami": {
+  "lat": 25.76,
+  "lon": -80.19
+ },
+ "lagos": {
+  "lat": 6.45,
+  "lon": 3.39
+ },
+ "cape town": {
+  "lat": -33.92,
+  "lon": 18.42
+ },
+ "sydney": {
+  "lat": -33.87,
+  "lon": 151.21
+ },
+ "mumbai": {
+  "lat": 19.08,
+  "lon": 72.88
+ },
+ "tehran": {
+  "lat": 35.69,
+  "lon": 51.39
+ },
+ "minsk": {
+  "lat": 53.9,
+  "lon": 27.57
+ },
+ "yangon": {
+  "lat": 16.84,
+  "lon": 96.17
+ },
+ "nuuk": {
+  "lat": 64.18,
+  "lon": -51.72
+ },
+ "kyiv": {
+  "lat": 50.45,
+  "lon": 30.52
+ },
+ "jebel ali": {
+  "lat": 25.01,
+  "lon": 55.06
+ },
+ "dubai": {
+  "lat": 25.2,
+  "lon": 55.27
+ },
+ "busan": {
+  "lat": 35.1,
+  "lon": 129.04
+ },
+ "vancouver": {
+  "lat": 49.28,
+  "lon": -123.12
+ },
+ "santos": {
+  "lat": -23.96,
+  "lon": -46.33
+ },
+ "piraeus": {
+  "lat": 37.94,
+  "lon": 23.64
+ },
+ "gdansk": {
+  "lat": 54.35,
+  "lon": 18.65
+ },
+ "stockholm": {
+  "lat": 59.33,
+  "lon": 18.07
+ },
+ "tallinn": {
+  "lat": 59.44,
+  "lon": 24.75
+ },
+ "oslo": {
+  "lat": 59.91,
+  "lon": 10.75
+ },
+ "london": {
+  "lat": 51.51,
+  "lon": -0.13
+ }
+}

@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: orbitdesk
+      POSTGRES_PASSWORD: orbitdesk   # local demo only
+      POSTGRES_DB: orbitdesk
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orbitdesk"]
+      interval: 3s
+      retries: 20
+
+  app:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://orbitdesk:orbitdesk@db:5432/orbitdesk
+    ports:
+      - "127.0.0.1:${PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
