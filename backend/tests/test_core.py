@@ -350,3 +350,16 @@ def test_audit_events_are_written_as_splunk_hec_json(capsys):
     line = json.loads(capsys.readouterr().out.strip())
     assert line["time"] == 1794470400.0 and line["sourcetype"] == "orbitdesk:audit"
     assert line["event"]["action"] == "approved" and line["event"]["hash"] == "ab" * 32
+
+
+def test_iam_auth_urls_carry_no_password_and_get_a_token_per_connection(monkeypatch):
+    from app import config, db
+    s = config.Settings(db_host="c.cluster-x.eu-north-1.rds.amazonaws.com", db_username="orbitdesk", db_iam_auth=True,
+                        db_password="must-not-be-used")
+    assert s.sqlalchemy_url.password is None
+    monkeypatch.setattr(db, "settings", s)
+    monkeypatch.setattr(db, "iam_token", lambda: "signed-token")
+    eng = db.make_engine()
+    cparams = {}
+    eng.dialect.dispatch.do_connect(eng.dialect, None, [], cparams)
+    assert cparams["password"] == "signed-token"

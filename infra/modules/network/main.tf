@@ -1,5 +1,5 @@
-# Two public subnets for the load balancer and the app tasks, two isolated subnets for the
-# database. There is no NAT gateway (about $35 a month plus traffic): tasks get a public IP for
+# Two public subnets for the load balancer and the app tasks. (The database is an Aurora express
+# cluster outside the VPC, reached through Aurora's internet access gateway.) There is no NAT gateway (about $35 a month plus traffic): tasks get a public IP for
 # their outbound calls to public data feeds, and their security group accepts traffic only from
 # the load balancer. See docs/adr/0001-no-nat-gateway.md.
 
@@ -25,7 +25,7 @@ resource "aws_default_security_group" "this" {
 }
 
 resource "aws_flow_log" "this" {
-  count                = var.flow_log_group_arn == "" ? 0 : 1
+  count                = var.enable_flow_logs ? 1 : 0
   vpc_id               = aws_vpc.this.id
   traffic_type         = "REJECT"
   log_destination_type = "cloud-watch-logs"
@@ -47,14 +47,6 @@ resource "aws_subnet" "public" {
   tags                    = { Name = "${var.name}-public-${local.azs[count.index]}" }
 }
 
-resource "aws_subnet" "isolated" {
-  count             = 2
-  vpc_id            = aws_vpc.this.id
-  availability_zone = local.azs[count.index]
-  cidr_block        = cidrsubnet(var.cidr, 8, 10 + count.index)
-  tags              = { Name = "${var.name}-isolated-${local.azs[count.index]}" }
-}
-
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.this.id
   route {
@@ -70,14 +62,3 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Isolated subnets use a route table with no internet route.
-resource "aws_route_table" "isolated" {
-  vpc_id = aws_vpc.this.id
-  tags   = { Name = "${var.name}-isolated" }
-}
-
-resource "aws_route_table_association" "isolated" {
-  count          = 2
-  subnet_id      = aws_subnet.isolated[count.index].id
-  route_table_id = aws_route_table.isolated.id
-}

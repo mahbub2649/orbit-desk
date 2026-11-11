@@ -7,6 +7,12 @@ variable "cidr" {
   default = "10.40.0.0/16"
 }
 
+variable "enable_flow_logs" {
+  description = "Send rejected-traffic flow logs to flow_log_group_arn."
+  type        = bool
+  default     = false
+}
+
 variable "flow_log_group_arn" {
   description = "CloudWatch log group for VPC flow logs of rejected traffic. Empty disables them."
   type        = string

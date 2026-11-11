@@ -81,33 +81,31 @@ module "network" {
   source             = "../modules/network"
   name               = var.name
   cidr               = var.vpc_cidr
+  enable_flow_logs   = true
   flow_log_group_arn = aws_cloudwatch_log_group.flow.arn
   flow_log_role_arn  = aws_iam_role.flow.arn
 }
 
 module "database" {
-  source                    = "../modules/database"
-  name                      = var.name
-  vpc_id                    = module.network.vpc_id
-  subnet_ids                = module.network.isolated_subnet_ids
-  client_security_group_ids = [module.service.app_security_group_id]
-  min_acu                   = var.db_min_acu
-  max_acu                   = var.db_max_acu
-  deletion_protection       = var.protect_data
-  final_snapshot            = var.protect_data
+  source              = "../modules/database"
+  name                = var.name
+  region              = var.region
+  min_acu             = var.db_min_acu
+  max_acu             = var.db_max_acu
+  deletion_protection = var.protect_data
 }
 
 module "service" {
   source              = "../modules/service"
   name                = var.name
   vpc_id              = module.network.vpc_id
-  vpc_cidr            = var.vpc_cidr
   public_subnet_ids   = module.network.public_subnet_ids
   image_tag           = var.image_tag
   db_host             = module.database.endpoint
   db_port             = module.database.port
   db_name             = module.database.database_name
-  db_secret_arn       = module.database.master_secret_arn
+  db_username         = module.database.username
+  db_connect_arn      = module.database.connect_resource_arn
   public_url          = var.public_url
   origin_header_value = random_password.origin_header.result
   extra_environment   = var.extra_environment

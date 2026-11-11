@@ -121,7 +121,7 @@ resource "aws_iam_role_policy_attachment" "execution" {
 data "aws_iam_policy_document" "execution_secrets" {
   statement {
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [var.db_secret_arn, aws_secretsmanager_secret.app.arn]
+    resources = [aws_secretsmanager_secret.app.arn]
   }
 }
 
@@ -131,10 +131,23 @@ resource "aws_iam_role_policy" "execution_secrets" {
   policy = data.aws_iam_policy_document.execution_secrets.json
 }
 
-# The app makes no AWS API calls, so its task role has no permissions at all.
+# The app's only AWS permission: connect to its own database as its own user with IAM auth.
 resource "aws_iam_role" "task" {
   name               = "orbit-desk-app-${var.name}-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_trust.json
+}
+
+data "aws_iam_policy_document" "task_db" {
+  statement {
+    actions   = ["rds-db:connect"]
+    resources = [var.db_connect_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "task_db" {
+  name   = "db-connect"
+  role   = aws_iam_role.task.id
+  policy = data.aws_iam_policy_document.task_db.json
 }
 
 # ---------- Cluster, task definition ----------
@@ -152,7 +165,10 @@ locals {
     DB_HOST          = var.db_host
     DB_PORT          = tostring(var.db_port)
     DB_NAME          = var.db_name
+    DB_USERNAME      = var.db_username
+    DB_IAM_AUTH      = "true"
     DB_SSLMODE       = "require"
+    AWS_REGION       = data.aws_region.current.region
     PUBLIC_URL       = var.public_url
     TLE_CACHE_DIR    = "/tmp/orbitdesk"
     AUDIT_HEC_STDOUT = "true"
@@ -160,8 +176,6 @@ locals {
   }, var.extra_environment)
 
   secrets = [
-    { name = "DB_USERNAME", valueFrom = "${var.db_secret_arn}:username::" },
-    { name = "DB_PASSWORD", valueFrom = "${var.db_secret_arn}:password::" },
     { name = "ANTHROPIC_API_KEY", valueFrom = "${aws_secretsmanager_secret.app.arn}:ANTHROPIC_API_KEY::" },
     { name = "JIRA_API_TOKEN", valueFrom = "${aws_secretsmanager_secret.app.arn}:JIRA_API_TOKEN::" },
     { name = "SLACK_WEBHOOK_URL", valueFrom = "${aws_secretsmanager_secret.app.arn}:SLACK_WEBHOOK_URL::" },
@@ -269,13 +283,14 @@ resource "aws_vpc_security_group_egress_rule" "app_http" {
   description       = "HTTP to public feeds"
 }
 
+# Aurora express clusters are reached through Aurora's internet access gateway (TLS + IAM auth).
 resource "aws_vpc_security_group_egress_rule" "app_db" {
   security_group_id = aws_security_group.app.id
-  cidr_ipv4         = var.vpc_cidr
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
   from_port         = 5432
   to_port           = 5432
-  description       = "PostgreSQL inside the VPC"
+  description       = "PostgreSQL via the Aurora internet access gateway"
 }
 
 # ---------- Load balancer ----------

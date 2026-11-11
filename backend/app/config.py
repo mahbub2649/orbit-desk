@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     db_username: str = ""
     db_password: str = ""
     db_sslmode: str = "require"
+    # IAM database authentication: no password at all. Each new connection gets a 15-minute token
+    # signed with the task role's credentials (Aurora express clusters accept only this).
+    db_iam_auth: bool = False
+    aws_region: str = "eu-north-1"
 
     # Audit events are also written to stdout as Splunk HTTP Event Collector JSON, so a log
     # shipper (CloudWatch Logs here) can forward them to a SIEM without reformatting.
@@ -64,7 +68,8 @@ class Settings(BaseSettings):
         special characters in a generated password."""
         if not self.db_host:
             return self.database_url
-        return URL.create("postgresql+psycopg", username=self.db_username, password=self.db_password,
+        return URL.create("postgresql+psycopg", username=self.db_username,
+                          password=None if self.db_iam_auth else self.db_password,
                           host=self.db_host, port=self.db_port, database=self.db_name,
                           query={"sslmode": self.db_sslmode})
 

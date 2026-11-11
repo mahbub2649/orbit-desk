@@ -6,10 +6,6 @@ variable "vpc_id" {
   type = string
 }
 
-variable "vpc_cidr" {
-  type = string
-}
-
 variable "public_subnet_ids" {
   type = list(string)
 }
@@ -46,8 +42,12 @@ variable "db_name" {
   type = string
 }
 
-variable "db_secret_arn" {
-  description = "Secrets Manager secret with username and password keys (managed by RDS)."
+variable "db_username" {
+  type = string
+}
+
+variable "db_connect_arn" {
+  description = "rds-db:connect resource for the database user (IAM authentication)."
   type        = string
 }
 

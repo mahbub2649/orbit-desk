@@ -8,5 +8,6 @@ pydantic-settings==2.*
 numpy==2.*
 sgp4==2.*
 anthropic>=1.0
+boto3==1.*
 pytest==8.*
 eccodes==2.*

@@ -5,7 +5,3 @@ output "vpc_id" {
 output "public_subnet_ids" {
   value = aws_subnet.public[*].id
 }
-
-output "isolated_subnet_ids" {
-  value = aws_subnet.isolated[*].id
-}
