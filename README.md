@@ -16,7 +16,8 @@
   <a href="#how-it-works"><img src="https://img.shields.io/badge/Orbits-53_satellites_·_SGP4-f59e0b?style=for-the-badge" alt="53 satellites, SGP4"></a>
   <a href="#features"><img src="https://img.shields.io/badge/Live_feeds-USGS_·_GDACS_·_EONET-3b82f6?style=for-the-badge" alt="Live feeds"></a>
   <a href="#design-decisions"><img src="https://img.shields.io/badge/AI-Claude,_read--only_tools-a855f7?style=for-the-badge" alt="Claude with read-only tools"></a>
-  <a href="#install"><img src="https://img.shields.io/badge/Tests-24_passing-22c55e?style=for-the-badge" alt="24 tests passing"></a>
+  <a href="#deployed-on-aws"><img src="https://img.shields.io/badge/AWS-Terraform_·_ECS_·_Aurora-06b6d4?style=for-the-badge" alt="AWS with Terraform"></a>
+  <a href="#install"><img src="https://img.shields.io/badge/Tests-27_passing-22c55e?style=for-the-badge" alt="27 tests passing"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge" alt="MIT License"></a>
 </p>
 
@@ -156,6 +157,35 @@ reported by two feeds appears once. Every event gets these numbers:
 
 <p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
 
+## Deployed on AWS
+
+The `infra/` directory deploys Orbit Desk to AWS with Terraform modules, and it has run there:
+CloudFront in front of an Application Load Balancer, ECS Fargate, Aurora PostgreSQL Serverless v2
+with IAM database authentication, Secrets Manager, an EventBridge Scheduler job that re-verifies
+the audit chain every night, CloudWatch alarms, and audit events in Splunk HEC format.
+
+<p align="center">
+  <img src="docs/aws-live.png" alt="Orbit Desk served from CloudFront" width="100%">
+  <br>
+  <sub>Served from CloudFront in eu-north-1 on 2026-11-12, then torn down with <code>terraform destroy</code>.</sub>
+</p>
+
+| Layer | AWS | Why it is set up this way |
+|---|---|---|
+| Edge | CloudFront, managed security headers | HTTPS without a domain; caches only hashed assets |
+| Ingress | ALB, CloudFront prefix list + secret header | The load balancer cannot be used to bypass CloudFront |
+| Compute | ECS Fargate, circuit breaker with rollback | A bad release rolls itself back |
+| Data | Aurora Serverless v2, 0–2 ACU, IAM auth | Pauses when idle; no database password exists |
+| Jobs | EventBridge Scheduler → Fargate task | Nightly audit-chain check; a metric filter raises an alarm |
+| Delivery | GitHub Actions, OIDC, Checkov, Trivy, gitleaks | No stored AWS keys; every accepted finding has a reason inline |
+
+Two guardrails of the free-plan AWS project (an SCP that blocks GitHub OIDC providers, and Aurora
+limited to express configuration) and how the code handles them are written up in
+[infra/README.md](infra/README.md), together with the verification steps and costs.
+[ADR 0001](docs/adr/0001-no-nat-gateway.md) explains why there is no NAT gateway.
+
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
+
 ## Install
 
 **Option 1: Docker (recommended).** Only Docker is needed.
@@ -180,7 +210,7 @@ one comes from.
 **Verify**
 
 ```bash
-make test                                         # 24 backend tests
+make test                                         # 27 backend tests
 curl -s localhost:8000/api/health                 # {"ok": true}
 curl -s "localhost:8000/api/coverage/at?lat=60.17&lon=24.94"   # wait for a look at Helsinki
 ```
@@ -297,6 +327,8 @@ Tools: `list_events`, `get_event`, `find_place`, `passes_for_location`,
 | AI | Claude through the Anthropic SDK, structured output |
 | Dashboard | TypeScript, React, Vite, three.js, satellite.js |
 | Packaging | One multi-stage Docker image, Docker Compose |
+| Cloud | Terraform; AWS ECS Fargate, ECR, ALB, CloudFront, Aurora Serverless v2, Secrets Manager, EventBridge Scheduler, CloudWatch |
+| CI | GitHub Actions: pytest, tsc and build, terraform validate, Checkov, Trivy, gitleaks |
 
 <p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
 
@@ -320,11 +352,13 @@ orbit-desk/
 │   │   ├── audit.py        hash-chained audit log
 │   │   └── main.py         API and workflow
 │   ├── alembic/            database migrations
-│   └── tests/              24 tests
+│   └── tests/              27 tests
 ├── frontend/src/
 │   ├── globe/              three.js globe, shaders, overlay
 │   └── components/         dossiers, latency panel, visibility strip, timeline
-├── docs/                   demo video and GIF
+├── infra/                  Terraform: bootstrap, app stack, five modules
+├── .github/workflows/      CI (tests, scans), manual deploy and destroy
+├── docs/                   demo video, AWS screenshot, ADRs
 ├── assets/                 README images
 ├── Dockerfile · docker-compose.yml · Makefile
 └── KEYS.md                 optional keys and where to get them

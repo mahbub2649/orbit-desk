@@ -7,7 +7,8 @@ output "port" {
 }
 
 output "database_name" {
-  value = var.database_name
+  description = "Express clusters have only the built-in database; the app's tables live in its own schema."
+  value       = "postgres"
 }
 
 output "username" {

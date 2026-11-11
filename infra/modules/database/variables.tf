@@ -6,11 +6,6 @@ variable "region" {
   type = string
 }
 
-variable "database_name" {
-  type    = string
-  default = "orbitdesk"
-}
-
 variable "master_username" {
   description = "Database user the app connects as, with IAM authentication."
   type        = string

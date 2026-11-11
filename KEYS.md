@@ -11,7 +11,7 @@ Put values in `.env` (never commit that file), then run `make up`.
 | 4 | Salesforce | Real CRM deals instead of simulated ones | Free Developer Edition | developer.salesforce.com/signup, then create an External Client App with the client-credentials flow | `SALESFORCE_INSTANCE_URL`, `SALESFORCE_CLIENT_ID`, `SALESFORCE_CLIENT_SECRET` |
 | 5 | AISStream | Live ship positions near ports (port-monitoring customers) | Free | aisstream.io → sign in with GitHub → API keys | `AISSTREAM_API_KEY` |
 | 6 | NASA FIRMS | Satellite-detected fire hotspots, more precise than the current wildfire feed | Free | firms.modaps.eosdis.nasa.gov/api/map_key | `FIRMS_MAP_KEY` |
-| later | AWS | Deploying it (ECS/Fargate, Aurora, Terraform), which the ICEYE posting asks for | Free tier needs a payment card; set a budget alarm first | aws.amazon.com/free | none in `.env`: use `aws configure sso` or a limited IAM user, never root keys |
+| done | AWS | Deploying it: see `infra/README.md` (Terraform, ECS Fargate, Aurora, CloudFront) | Free-plan credits; a budget alarm is part of the bootstrap | aws.amazon.com/free | none in `.env`: `aws login`, short-lived credentials only |
 
 Already in use, no key needed: CelesTrak (orbits), USGS (earthquakes), GDACS
 (disaster alerts and floods), NASA EONET (storms, wildfires), NOAA GFS (cloud

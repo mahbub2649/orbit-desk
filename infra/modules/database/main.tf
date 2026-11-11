@@ -14,7 +14,6 @@ resource "terraform_data" "cluster" {
   input = {
     id       = var.name
     region   = var.region
-    database = var.database_name
     username = var.master_username
     min_acu  = var.min_acu
     max_acu  = var.max_acu
@@ -25,7 +24,7 @@ resource "terraform_data" "cluster" {
 
   provisioner "local-exec" {
     command = join(" ", [
-      self.input.script, "create", self.input.id, self.input.region, self.input.database, self.input.username,
+      self.input.script, "create", self.input.id, self.input.region, self.input.username,
       self.input.min_acu, self.input.max_acu, self.input.pause, self.input.protect,
     ])
   }
