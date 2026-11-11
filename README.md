@@ -1,99 +1,301 @@
-# Orbit Desk
+<!-- HERO -->
+<p align="center">
+  <img src="assets/banner.png" alt="Orbit Desk" width="100%">
+</p>
 
-A tasking console for a radar (SAR) satellite operator. It answers one
-question continuously: **where in the world does radar imaging matter most
-right now, and how soon can we look?**
+<h1 align="center">
+  <img src="assets/logo.png" alt="Logo" width="48" height="48" style="vertical-align: middle;">
+  &nbsp;orbit-desk
+</h1>
 
-[![Orbit Desk: 10-second demo](docs/demo.gif)](docs/demo.mp4)
+<p align="center">
+  <strong>Where in the world does radar imaging matter most right now, and how soon can we look?</strong>
+</p>
 
-*10-second demo ([MP4, 1600×900](docs/demo.mp4)): pick the top event and the
-globe flies to it with its countdown to the first radar look, time runs at ×600
-so the satellites sweep past, then the latency map shows how soon any place on
-Earth can be imaged.*
+<p align="center">
+  <a href="#how-it-works"><img src="https://img.shields.io/badge/Orbits-53_satellites_·_SGP4-f59e0b?style=for-the-badge" alt="53 satellites, SGP4"></a>
+  <a href="#features"><img src="https://img.shields.io/badge/Live_feeds-USGS_·_GDACS_·_EONET-3b82f6?style=for-the-badge" alt="Live feeds"></a>
+  <a href="#design-decisions"><img src="https://img.shields.io/badge/AI-Claude,_read--only_tools-a855f7?style=for-the-badge" alt="Claude with read-only tools"></a>
+  <a href="#install"><img src="https://img.shields.io/badge/Tests-24_passing-22c55e?style=for-the-badge" alt="24 tests passing"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge" alt="MIT License"></a>
+</p>
 
-It watches public event feeds, computes from real orbits when a satellite can
-image each event, measures how blind optical satellites are there (night and
-cloud), and ranks the events. One click turns an event into a tasking order,
-which then goes through fixed approval rules, simulated CRM and ticket writes,
-and a tamper-evident audit log. Sales can also type a customer request in plain
-words and get the same analysis.
+<p align="center">
+  <sub>A tasking console for a radar (SAR) satellite operator: live world events ranked by time to the first radar look and how blind optical satellites are there, turned into approved orders with a tamper-evident audit trail, on a 3D globe drawn from scratch.</sub>
+</p>
 
-## Run it
+<p align="center">
+  <a href="docs/demo.mp4"><img src="docs/demo.gif" alt="Orbit Desk: 10-second demo" width="100%"></a>
+  <br>
+  <sub>10-second demo (<a href="docs/demo.mp4">MP4, 1600×900</a>): pick the top event and the globe flies to it with its countdown to the first radar look, time runs at ×600 so the satellites sweep past, then the latency map shows how soon any place on Earth can be imaged.</sub>
+</p>
 
-```bash
-cp .env.example .env      # optional: add ANTHROPIC_API_KEY to use Claude
-make up                   # then open http://localhost:8000
-make test
-```
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
 
-Only Docker is needed. No API keys are required for any data feed; `KEYS.md`
-lists the optional ones. City data is from GeoNames (CC BY 4.0). Without an
-Anthropic key, typed requests are read by a simple rule-based parser.
+## What is this?
 
-## What it does
+Radar satellites see through cloud and darkness, so they matter most exactly where
+optical satellites are blind. Orbit Desk watches public event feeds, computes from
+real orbits when a radar satellite can image each event, measures how blind optical
+imaging is there, and ranks the events. One click turns an event into a tasking
+order that goes through fixed approval rules, CRM and ticket writes, and a
+hash-chained audit log.
 
-**Watch board.** Earthquakes (USGS), disaster alerts and floods (GDACS) and
-storms and wildfires (NASA EONET) are fetched every 10 minutes and merged, so the same event reported
-by two feeds appears once. For each event the backend computes:
+- **Watch board:** earthquakes, floods, storms and wildfires, ranked by a transparent priority score
+- **Time to first look:** SGP4 propagation of the 53 public ICEYE orbits, for every event
+- **Optical blindness:** night from sun elevation, cloud from NOAA GFS whole-world forecasts
+- **Latency map:** how soon any place on Earth can be imaged, on a 4° grid
+- **Orders:** 7-day feasibility, a collection plan that avoids booked satellites, approvals, Jira and Slack
+- **Analyst:** Claude answers questions through seven read-only tools and cannot approve anything
+
+> [!NOTE]
+> Independent portfolio project using only public data. Not affiliated with ICEYE.
+
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
+
+## Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**Watch board**
+
+Earthquakes (USGS), disaster alerts and floods (GDACS), and storms and wildfires
+(NASA EONET), fetched every 10 minutes and merged so an event reported by two
+feeds appears once. Each event gets:
 
 | Number | How |
 |---|---|
-| Time to first radar look | SGP4 propagation of the 53 public ICEYE orbits (CelesTrak) |
-| Looks in 24 h and 72 h | Same propagation, shared across all events |
-| Optical-blind share | Hours that are night (sun below the horizon) or at least 70% cloud (NOAA GFS forecast) |
-| People nearby | Population of cities within 100 km, from a bundled GeoNames list |
-| Priority | `100 x severity x radar advantage x freshness x people nearby`, with every term and its source shown |
+| Time to first radar look | SGP4 over 53 orbits (CelesTrak) |
+| Looks in 24 h / 72 h | Same propagation, shared by all events |
+| Optical-blind share | Hours of night or ≥70% cloud (NOAA GFS) |
+| People nearby | Cities within 100 km (GeoNames) |
+| Priority | `100 × severity × radar advantage × freshness × people`, every term shown with its source |
 
-**Latency map.** The LATENCY MAP switch colours the whole globe by how long
-it would take a radar satellite to first look at each place, using the same
-orbit model as everything else, on a 4° grid over the next 24 hours (rebuilt
-every 10 minutes, about 10 seconds of NumPy per rebuild). Short waits stay
-clear; the gaps between orbits show up as orange bands, and places with no look
-at all are hatched. Hover any point for its wait and number of looks. A panel
-shows area-weighted figures (typical wait, the wait 9 in 10 places beat, share
-reachable within 1 and 3 hours) and the typical wait at every latitude.
-`GET /api/coverage` returns the grid and `GET /api/coverage/at?lat=&lon=` one
-cell. A test checks every grid cell against the single-target pass search.
+**Event dossier**
 
-**Event dossier.** A live countdown to the first look, a strip showing night,
-cloud and every radar pass on one time axis, and the priority calculation.
+A live countdown to the first look, one time axis showing night, cloud and every
+radar pass, and the full priority calculation.
 
-**Tasking orders.** Created from an event or from free text. Each order gets a
-7-day feasibility check, a collection plan that avoids satellites already
-booked by other open orders, a downloadable Markdown brief, a revisit comparison against two
-other radar constellations (Capella, Umbra, same model and public orbits), and
-approval rules evaluated from its coordinates.
+**Latency map**
 
-**Integrations.** On final approval the app creates a Jira ticket (real when
-`JIRA_*` is set, simulated otherwise) and a simulated Salesforce deal. Writes
-are idempotent; a failed write leaves the order approved, logs the error and
-offers a retry. Slack messages go out for new orders, decisions and new
+The whole globe coloured by the wait for the first radar look over the next 24
+hours, rebuilt every 10 minutes (about 10 s of NumPy). Quick places stay clear;
+gaps between orbits show as orange bands; places with no look are hatched. Hover
+any point for its wait and number of looks. Area-weighted figures: typical wait,
+the wait 9 in 10 places beat, share reachable within 1 and 3 hours.
+
+</td>
+<td width="50%" valign="top">
+
+**Tasking orders**
+
+Created from an event or from a plain-language request. Each order gets a 7-day
+feasibility verdict, a collection plan that avoids satellites already booked by
+other open orders, a Markdown brief, and a revisit comparison against two other
+radar constellations (Capella, Umbra; same model, public orbits).
+
+**Approvals and audit**
+
+Every order needs a sales manager. An area in a restricted country also needs a
+compliance officer. Nobody approves their own request. Every step is written to a
+hash-chained log, and `GET /api/audit/verify` reports the first entry that was
+edited or deleted.
+
+**Integrations**
+
+On final approval: a Jira ticket (real when `JIRA_*` is set) and a simulated
+Salesforce deal. Writes are idempotent; a failed write leaves the order approved,
+logs the error and offers a retry. Slack messages for new orders, decisions and
 high-priority events when `SLACK_WEBHOOK_URL` is set.
 
-**Analyst (Ask tab).** Claude answers questions such as "which floods can we
-image before 06:00 UTC?" by calling seven read-only tools over the console's
-own data (watch board, events, pass prediction, city lookup, population,
-orders). Every lookup is shown under the answer and logged. It has no tool that
-can create, approve or send anything. The event dossier can also draft an
-outreach email for an insurer, agency, NGO or port operator, using only that
-event's computed facts; nothing is sent.
+**Analyst (Ask tab)**
 
-**Approvals and audit.** Every order needs a sales manager. An area in a
-restricted country also needs a compliance officer. Nobody approves their own
-request. Every step is written to a hash-chained log; `GET /api/audit/verify`
-reports the first entry that was edited or deleted.
+Claude answers questions such as "which floods can we image before 06:00 UTC?" by
+calling seven read-only tools over the console's own data. Every lookup is shown
+and logged. The dossier can also draft outreach for an insurer, agency, NGO or
+port operator from that event's computed facts; nothing is sent.
 
-**Globe.** Drawn from scratch with three.js: Natural Earth outlines painted to
-a texture, dotted land, a day/night line, satellites moving on their real
-orbits, pulsing event markers, the ground track of upcoming passes, and green
-links to any satellite that could image the selected target at this moment.
+**Globe**
 
-## The AI can suggest, but it cannot decide
+Drawn from scratch with three.js: Natural Earth outlines painted to a texture,
+dotted land, a day/night line, satellites on their real orbits, pulsing event
+markers, ground tracks of upcoming passes, and live links to any satellite that
+could image the selected target at this moment.
 
-Try the "Injection test" under Intake. The text claims the order is
-pre-approved and tells the system to skip the review. Approval rules look only
-at where the coordinates fall, so the order is still held for compliance, and a
+</td>
+</tr>
+</table>
+
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
+
+## How it works
+
+```text
+ PUBLIC FEEDS (every 10 min)              ORBITS (CelesTrak, cached 6 h)
+ USGS · GDACS · NASA EONET                53 TLEs ──▶ SGP4 ephemeris, 7 days
+ NOAA GFS cloud (whole-world files)            │      computed once, reused for
+ NOAA SWPC space weather                       │      every target
+          │                                    │
+          ▼                                    ▼
+ ┌─────────────────┐   ┌──────────────────────────────────────────┐
+ │ Fuse + dedupe   │──▶│ Per event: passes (15°–45° incidence),   │
+ │ events          │   │ night + cloud blindness, people nearby,  │
+ └─────────────────┘   │ priority score with every term explained │
+                       └────────────────────┬─────────────────────┘
+                                            │            ┌────────────────────┐
+                                            │            │ Latency map:       │
+                                            │            │ 4,050 grid cells,  │
+                                            ▼            │ first look + looks │
+ ┌──────────────┐   ┌──────────────────────────────┐     └────────────────────┘
+ │ Free text or │──▶│ Tasking order                │
+ │ one click    │   │ feasibility · collection plan│
+ └──────────────┘   │ avoiding booked satellites   │
+  (Claude parser    └───────────────┬──────────────┘
+   or rule-based)                   ▼
+                    ┌──────────────────────────────┐
+                    │ Approval rules (coordinates  │──▶ Jira ticket · CRM deal
+                    │ only) · sales · compliance   │──▶ Slack message
+                    └───────────────┬──────────────┘
+                                    ▼
+                    ┌──────────────────────────────┐
+                    │ Hash-chained audit log       │
+                    └──────────────────────────────┘
+```
+
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
+
+## Install
+
+**Option 1: Docker (recommended).** Only Docker is needed.
+
+```bash
+cp .env.example .env      # optional: add ANTHROPIC_API_KEY to use Claude
+make up                   # builds one image and starts it with PostgreSQL
+# open http://localhost:8000
+```
+
+**Option 2: keys for more features.** The app runs with no keys at all. Each
+key in `.env` switches on one more capability; [KEYS.md](KEYS.md) says where each
+one comes from.
+
+| Key | Unlocks |
+|---|---|
+| `ANTHROPIC_API_KEY` | Claude reads free-text requests, the analyst and outreach drafts |
+| `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY` | Real Jira tickets on approval |
+| `SLACK_WEBHOOK_URL` | Slack messages for orders, decisions and high-priority events |
+| `INTEL_ENABLED=false` | Turns all public feeds off and runs fully offline |
+
+**Verify**
+
+```bash
+make test                                         # 24 backend tests
+curl -s localhost:8000/api/health                 # {"ok": true}
+curl -s "localhost:8000/api/coverage/at?lat=60.17&lon=24.94"   # wait for a look at Helsinki
+```
+
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
+
+## Usage
+
+<details>
+<summary><strong>Try the injection test</strong>: the AI can suggest, but it cannot decide</summary>
+
+<br>
+
+Open **Intake** and pick "Injection test". The text claims the order is
+pre-approved and tells the system to skip the review. Approval rules look only at
+where the coordinates fall, so the order is still held for compliance, and the
 refused approval attempt is logged.
+
+</details>
+
+<details>
+<summary><strong>Watch board and events API</strong></summary>
+
+<br>
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/api/intel/watch` | Ranked events, feed status, space weather |
+| `GET` | `/api/intel/events/{id}/brief` | Markdown brief for one event |
+| `POST` | `/api/intel/events/{id}/draft` | Outreach draft for an audience (not sent) |
+
+</details>
+
+<details>
+<summary><strong>Latency map API</strong></summary>
+
+<br>
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/api/coverage` | Hours to first look and looks per cell, 4° grid, plus area-weighted stats |
+| `GET` | `/api/coverage/at?lat=&lon=` | One cell: hours to first look, looks in 24 h |
+
+</details>
+
+<details>
+<summary><strong>Orders, approvals and audit API</strong></summary>
+
+<br>
+
+| Method | Path | Does |
+|---|---|---|
+| `POST` | `/api/requests` | Create an order from plain text |
+| `POST` | `/api/requests/from-event/{id}` | Create an order from an event (one per open event) |
+| `GET` | `/api/requests`, `/api/requests/{id}` | List or read orders |
+| `GET` | `/api/requests/{id}/brief` | Markdown brief for an order |
+| `POST` | `/api/requests/{id}/decision` | Approve or reject (role checked) |
+| `POST` | `/api/requests/{id}/sync` | Retry a failed Jira or CRM write |
+| `GET` | `/api/audit`, `/api/audit/verify` | Audit log and chain check |
+
+Sign-in is a demo switcher: the `X-Demo-User` header picks the operator
+(account executive, sales manager or compliance officer).
+
+</details>
+
+<details>
+<summary><strong>Analyst API</strong></summary>
+
+<br>
+
+`POST /api/agent/ask` with `{"question": "...", "history": [], "context": null}`.
+Tools: `list_events`, `get_event`, `find_place`, `passes_for_location`,
+`people_nearby`, `list_orders`, `get_order`. All read-only; the loop is capped.
+
+</details>
+
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
+
+## Design decisions
+
+1. **The AI suggests; fixed rules decide.** Approvals depend only on coordinates and roles, never on what a request's text says.
+2. **No target location leaves the app.** Cloud data is downloaded as whole-world files and looked up locally; cities and country checks use bundled data. The only thing sent to Anthropic is a typed request's text, when a key is set.
+3. **One ephemeris, many targets.** Orbits are propagated once per window and reused for every event, order and grid cell, which is what makes a 4,050-cell world map take seconds.
+4. **Every number shows its source.** The priority score lists each term and where it came from, so an operator can disagree with it.
+5. **Area-weighted statistics.** A grid cell near the pole covers far less ground than one at the equator, so latency figures weight by area.
+6. **Writes are idempotent and failures are visible.** A failed Jira or CRM write leaves the order approved, logs the error and offers a retry.
+7. **Tamper-evident by default.** Each audit entry hashes the one before it, so an edit or deletion is detectable.
+8. **Cross-checked geometry.** Pass geometry was compared with a second SGP4 library (satellite.js): 293 passes agreed within 0.7° of incidence angle, and a test checks every latency-map cell against the single-target pass search.
+
+<details>
+<summary><strong>Honest limits</strong></summary>
+
+<br>
+
+- **Feasibility is a simplified model.** A look counts when a satellite's closest approach has an incidence angle between 15° and 45°. These are assumptions, not vendor specifications. Every satellite is treated as working and free; the constellation comparison shows orbit geometry only, not capacity.
+- **"Optical blind" is an estimate:** night from sun elevation, cloud from a forecast with a fixed 70% threshold, on a 1° grid (about 100 km) every 3 to 6 hours.
+- **Priority is a transparent heuristic**, not a validated model. Severity scales differ by event type.
+- **People nearby counts cities above 15,000 only**, so rural areas read as zero.
+- **Conflict avoidance is simple:** one satellite cannot serve two orders within 10 minutes. It is not a full scheduler.
+- **Salesforce is simulated**, Jira is simulated unless configured, and sign-in is a demo switcher.
+- **The restricted-country list is an example**, not legal advice.
+
+</details>
+
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
 
 ## Stack
 
@@ -106,47 +308,41 @@ refused approval attempt is logged.
 | Dashboard | TypeScript, React, Vite, three.js, satellite.js |
 | Packaging | One multi-stage Docker image, Docker Compose |
 
-## Honest limits
+<p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
 
-- **Feasibility is a simplified model.** A look is counted when a satellite's
-  closest approach has an incidence angle between 15° and 45°. These limits are
-  assumptions, not vendor specifications. Every catalogued satellite is treated
-  as working and free. The constellation comparison uses the same model, so it
-  shows orbit geometry only, not real capacity.
-- **"Optical blind" is an estimate**: night from sun elevation, cloud from a
-  forecast with a fixed 70% threshold.
-- **Priority is a transparent heuristic**, not a validated model. Severity
-  scales differ by event type.
-- **No target location leaves the app.** The cloud forecast is downloaded as
-  whole-world files from NOAA and looked up locally; city lookups and country
-  checks use bundled data. The only thing sent to Anthropic is the text of a
-  typed request, when a key is set. `INTEL_ENABLED=false` turns all feeds off.
-- **Cloud data is coarse**: a 1° grid (about 100 km), every 3 to 6 hours.
-- **People nearby counts cities above 15,000 only**, so rural areas read as zero.
-- **Conflict avoidance is simple**: one satellite cannot serve two orders
-  within 10 minutes. It is not a full scheduler.
-- **Salesforce and Jira are simulated**, and sign-in is a demo switcher.
-- **The restricted-country list is an example**, not legal advice.
-- Pass geometry was cross-checked against a second SGP4 library (satellite.js):
-  293 passes agreed to within 0.7° of incidence angle.
-- Independent portfolio project using only public data. Not affiliated with ICEYE.
+## Project layout
 
-## Layout
-
+```text
+orbit-desk/
+├── backend/
+│   ├── app/
+│   │   ├── orbits.py       orbit data, ephemeris, pass search, sun elevation
+│   │   ├── coverage.py     worldwide latency map, area-weighted stats
+│   │   ├── osint.py        event feeds, fusion, space weather
+│   │   ├── cloud.py        NOAA GFS cloud forecast, whole-world download
+│   │   ├── watch.py        watch board: optical profile, priority score
+│   │   ├── geo.py          offline city database: people nearby, geocoding
+│   │   ├── parser.py       Claude parser and rule-based fallback
+│   │   ├── policy.py       approval rules, country lookup
+│   │   ├── agent.py        analyst: tools, capped loop, outreach drafts
+│   │   ├── connectors.py   Jira, Salesforce (simulated), Slack
+│   │   ├── briefs.py       Markdown briefs for events and orders
+│   │   ├── audit.py        hash-chained audit log
+│   │   └── main.py         API and workflow
+│   ├── alembic/            database migrations
+│   └── tests/              24 tests
+├── frontend/src/
+│   ├── globe/              three.js globe, shaders, overlay
+│   └── components/         dossiers, latency panel, visibility strip, timeline
+├── docs/                   demo video and GIF
+├── assets/                 README images
+├── Dockerfile · docker-compose.yml · Makefile
+└── KEYS.md                 optional keys and where to get them
 ```
-backend/app/orbits.py      orbit data, ephemeris, pass search, sun elevation
-backend/app/coverage.py    worldwide latency map: first look per grid cell, area-weighted stats
-backend/app/osint.py       event feeds, fusion, space weather
-backend/app/cloud.py       NOAA GFS cloud forecast, whole-world download
-backend/app/geo.py         offline city database: people nearby, geocoding
-backend/app/briefs.py      Markdown briefs for events and orders
-backend/app/agent.py       analyst: tool definitions, capped loop, outreach drafts
-backend/app/connectors.py  Jira (real or simulated), Salesforce (simulated), Slack
-backend/app/watch.py       watch board: optical profile, priority score
-backend/app/parser.py      Claude parser and rule-based fallback
-backend/app/policy.py      approval rules, country lookup
-backend/app/audit.py       hash-chained audit log
-backend/app/main.py        API and workflow
-frontend/src/globe/        the 3D globe and its overlay
-frontend/src/components/   dossiers, visibility strip, timeline
-```
+
+City data from GeoNames (CC BY 4.0). Borders from Natural Earth (public domain).
+Orbits from CelesTrak.
+
+<p align="center"><img src="assets/divider.png" alt="" width="60%"></p>
+
+<p align="center"><sub>MIT License © 2026 Md Mahbub Islam</sub></p>
