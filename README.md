@@ -26,9 +26,9 @@
 </p>
 
 <p align="center">
-  <a href="docs/demo.mp4"><img src="docs/demo.gif" alt="Orbit Desk: 10-second demo" width="100%"></a>
+  <a href="docs/demo.mp4"><img src="docs/demo.gif" alt="Orbit Desk: click for the 2-minute narrated demo" width="100%"></a>
   <br>
-  <sub>10-second demo (<a href="docs/demo.mp4">MP4, 1600×900</a>): pick the top event and the globe flies to it with its countdown to the first radar look, time runs at ×600 so the satellites sweep past, then the latency map shows how soon any place on Earth can be imaged.</sub>
+  <sub><b><a href="docs/demo.mp4">▶ Watch the 2-minute narrated demo (MP4, with sound)</a></b>: live watch board, event dossier, latency map, plain-language intake read by Claude, the Claude analyst with read-only tools, the prompt-injection test, the hash-chained audit log, and the AWS deployment. Recorded from the running app; the waits for Claude are shortened. Voiceover generated with ElevenLabs.</sub>
 </p>
 
 <p align="center"><img src="assets/divider.png" alt="" width="80%"></p>

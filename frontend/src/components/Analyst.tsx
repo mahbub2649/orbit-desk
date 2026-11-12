@@ -33,7 +33,11 @@ export default function Analyst({ available, context, contextLabel }: { availabl
   const [error, setError] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
 
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth" }), [turns, busy]);
+  // Braces matter: newer browsers return a Promise from smooth scrolling, and an effect must
+  // return nothing or a cleanup function, or React throws when it runs the "cleanup".
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth" });
+  }, [turns, busy]);
 
   const send = async (text: string) => {
     if (!text.trim() || busy) return;
