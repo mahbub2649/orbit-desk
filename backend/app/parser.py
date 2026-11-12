@@ -17,7 +17,7 @@ import re
 from datetime import date, timedelta
 
 from . import geo
-from .config import DATA_DIR, settings
+from .config import DATA_DIR, settings, fallback_args
 from .schemas import ParsedOrder
 
 log = logging.getLogger(__name__)
@@ -87,9 +87,8 @@ def parse_with_claude(text: str, today: date) -> ParsedOrder:
         model=settings.llm_model,
         max_tokens=16000,
         system=SYSTEM_PROMPT,
-        # If the main model declines a request, the API retries on a fallback model.
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
+        # If the main model declines a request, the API retries on a fallback model (where supported).
+        **fallback_args(settings.llm_model),
         output_config={"effort": "low", "format": {"type": "json_schema", "schema": ORDER_SCHEMA}},
         messages=[{"role": "user", "content": f"Today's date: {today.isoformat()}\n\nSales note:\n{text}"}],
     )

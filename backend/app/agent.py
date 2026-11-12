@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import geo, orbits, policy, watch
-from .config import settings
+from .config import settings, fallback_args
 from .models import TaskingRequest
 
 log = logging.getLogger(__name__)
@@ -301,8 +301,7 @@ def ask(question: str, history: list[dict], context: str | None, db: Session, cl
             max_tokens=16000,
             system=system,
             tools=TOOLS,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
+            **fallback_args(settings.llm_model),
             output_config={"effort": "medium"},
             messages=messages,
         )
@@ -378,8 +377,7 @@ def draft_outreach(event: dict, audience: str, client=None) -> dict:
     response = client.beta.messages.create(
         model=settings.llm_model,
         max_tokens=16000,
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
+        **fallback_args(settings.llm_model),
         output_config={"effort": "low", "format": {"type": "json_schema", "schema": DRAFT_SCHEMA}},
         messages=[{"role": "user", "content": DRAFT_PROMPT.format(audience=AUDIENCES[audience], event=json.dumps(facts, default=str))}],
     )

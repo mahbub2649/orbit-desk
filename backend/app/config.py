@@ -74,4 +74,16 @@ class Settings(BaseSettings):
                           query={"sslmode": self.db_sslmode})
 
 
+# Models that accept the server-side refusal fallback (beta). Claude Haiku 5.5 does not: on it a
+# refusal simply ends the request, and the callers already handle stop_reason == "refusal".
+FALLBACK_MODELS = ("claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5")
+
+
+def fallback_args(model: str) -> dict:
+    """Extra request arguments that turn on the server-side refusal fallback where supported."""
+    if model in FALLBACK_MODELS:
+        return {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
+    return {}
+
+
 settings = Settings()
