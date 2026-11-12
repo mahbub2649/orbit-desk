@@ -26,9 +26,9 @@
 </p>
 
 <p align="center">
-  <a href="docs/demo.mp4"><img src="docs/demo.gif" alt="Orbit Desk: click for the 2-minute narrated demo" width="100%"></a>
+  <a href="https://mahbub2649.github.io/orbit-desk/"><img src="docs/demo.gif" alt="Orbit Desk: click to watch the 2-minute narrated demo" width="100%"></a>
   <br>
-  <sub><b><a href="docs/demo.mp4">▶ Watch the 2-minute narrated demo (MP4, with sound)</a></b>: live watch board, event dossier, latency map, plain-language intake read by Claude, the Claude analyst with read-only tools, the prompt-injection test, the hash-chained audit log, and the AWS deployment. Recorded from the running app; the waits for Claude are shortened. Voiceover generated with ElevenLabs.</sub>
+  <sub><b><a href="https://mahbub2649.github.io/orbit-desk/">▶ Watch the 2-minute narrated demo</a></b> (plays in the browser, with chapters; <a href="docs/demo.mp4">MP4</a>): live watch board, event dossier, latency map, plain-language intake read by Claude, the Claude analyst with read-only tools, the prompt-injection test, the hash-chained audit log, and the AWS deployment. Recorded from the running app; the waits for Claude are shortened. Voiceover generated with ElevenLabs.</sub>
 </p>
 
 <p align="center"><img src="assets/divider.png" alt="" width="80%"></p>
